@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Free Email Verification API for Developers | Giggal.ai Developer Hub</title>
-<meta name="description" content="Free email verification API with 1,000 credits. Verify one address or run bulk email verification jobs. Endpoints, Node.js and Python code, MCP and n8n.">
+<title>Email Verifier: Free Tool, Bulk Email Verification and API</title>
+<meta name="description" content="Giggal.ai email verifier: check one address free, run bulk email verification on a list, or use the free email verification API with 1,000 credits.">
 <link rel="canonical" href="https://giggal-ai.github.io/">
 <meta name="robots" content="index, follow">
 <!-- GSC_VERIFICATION -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Giggal.ai Developer Hub">
-<meta property="og:title" content="Free Email Verification API for Developers">
-<meta property="og:description" content="Verify one address or a whole list through the API. Endpoints, code examples, MCP server and n8n node.">
+<meta property="og:title" content="Email Verifier: Free Tool, Bulk Email Verification and API">
+<meta property="og:description" content="Check one address free, verify a whole list, or use the email verification API.">
 <meta property="og:url" content="https://giggal-ai.github.io/">
 <meta property="og:image" content="https://giggal-ai.github.io/og-card.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -24,6 +24,7 @@
 {"@type":"WebSite","name":"Giggal.ai Developer Hub","url":"https://giggal-ai.github.io/"},
 {"@type":"WebAPI","name":"Giggal.ai Email Verification API","description":"REST API that verifies whether an email address exists, including catch-all domains and inboxes behind secure email gateways.","documentation":"https://giggal.ai/public/docs","provider":{"@type":"Organization","name":"Giggal.ai","url":"https://giggal.ai"}},
 {"@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"What is an email verifier?","acceptedAnswer":{"@type":"Answer","text":"An email verifier checks whether an email address can receive mail. It checks the format, the domain's mail servers and the mailbox itself, without sending an email. Giggal.ai also resolves catch-all domains, which most verifiers mark as risky."}},
 {"@type":"Question","name":"Is there a free email verification API?","acceptedAnswer":{"@type":"Answer","text":"Yes. A new Giggal.ai account gets 1,000 free credits with no card required, and the credits do not expire. One credit verifies one address through the API."}},
 {"@type":"Question","name":"What is the difference between an email verification API and an email validation API?","acceptedAnswer":{"@type":"Answer","text":"Most people use the two terms for the same thing. Validation often means checking the format, and verification means confirming that the mailbox exists. The Giggal.ai API does both in one call."}},
 {"@type":"Question","name":"Can I run bulk email verification through the API?","acceptedAnswer":{"@type":"Answer","text":"Yes. POST /v1/verify-batch accepts up to 50,000 addresses in one job. You poll the job status and then fetch the results page by page."}},
@@ -38,7 +39,8 @@
 <div class="wrap">
 <a href="https://giggal.ai" aria-label="Giggal.ai home"><img src="/giggal-logo-wordmark.png" alt="Giggal.ai" width="124" height="30"></a>
 <nav class="toc" aria-label="On this page">
-<a href="#quick-start">Quick start</a>
+<a href="#tool">Email verifier</a>
+<a href="#quick-start">API</a>
 <a href="#endpoints">Endpoints</a>
 <a href="#bulk">Bulk</a>
 <a href="#mcp">MCP</a>
@@ -50,17 +52,28 @@
 
 <main class="wrap">
 <div class="hero">
-<h1>Free Email Verification API for Developers</h1>
-<p class="lead">The Giggal.ai email verification API tells you whether an email address exists before you send to it. Verify one address at signup, run bulk email verification on a full list, or let your AI assistant check addresses for you. It also returns a real valid or invalid result for catch-all domains and for inboxes behind secure email gateways, where most email verifier tools stop at "risky" or "unknown".</p>
+<h1>Email Verifier: Check Any Email Address Before You Send</h1>
+<p class="lead">Giggal.ai is an email verifier that tells you whether an email address really exists. Check one address for free in your browser, run bulk email verification on a full list, or connect the email verification API to your own app. It also returns a real valid or invalid result for catch-all domains and for inboxes behind secure email gateways, where most email verifier tools stop at "risky" or "unknown".</p>
 <div class="btns">
-<a class="btn primary" href="https://emailverifier.giggal.ai/sign-up">Get a free API key</a>
-<a class="btn ghost" href="https://giggal.ai/public/docs">Full API reference</a>
+<a class="btn primary" href="https://giggal.ai/email-checker">Verify an email address free</a>
+<a class="btn ghost" href="https://emailverifier.giggal.ai/sign-up">Get a free API key</a>
 </div>
-<p class="note">1,000 free credits for every new account. No card required. Credits do not expire.</p>
+<p class="note">The email checker needs no signup. API accounts get 1,000 free credits, no card required.</p>
 </div>
 
+<section id="tool">
+<h2>Free email verifier and bulk email verification</h2>
+<p>You do not need to write code to verify an email address. Pick the email verification tool that fits the job:</p>
+<div class="grid">
+<div class="card"><h3>Check one address</h3><p>Paste an address into the free <a href="https://giggal.ai/email-checker">email verifier</a> and get a result in a few seconds. No signup needed.</p></div>
+<div class="card"><h3>Clean a whole list</h3><p>Upload a CSV to the <a href="https://giggal.ai/bulk-email-verifier">bulk email verifier</a> and remove invalid, risky and disposable addresses before your next send.</p></div>
+<div class="card"><h3>Verify in your own app</h3><p>Use the free email verification API below to check addresses at signup or in your CRM.</p></div>
+</div>
+<p>Every check follows the same steps: the format, the domain's mail servers, and the mailbox itself. For catch-all domains, which accept mail for any address, the email verifier runs a deeper check instead of stopping at "accept-all".</p>
+</section>
+
 <section id="quick-start">
-<h2>Verify an email address with one API call</h2>
+<h2>Free email verification API: verify an address with one call</h2>
 <p>Send a POST request to <code>/v1/verify</code> with your API key as a Bearer token. Every endpoint uses the base URL <code>https://api.giggal.ai</code>.</p>
 <pre><code>curl -X POST https://api.giggal.ai/v1/verify \
   -H "Authorization: Bearer YOUR_API_KEY" \
@@ -243,10 +256,8 @@ const results = await fetch(
 </section>
 
 <section id="no-code">
-<h2>No code? Use the email verifier in your browser</h2>
+<h2>More ways to use the email verifier</h2>
 <div class="grid">
-<div class="card"><h3>Email verifier</h3><p>Check one address in a few seconds. Free, no signup needed.</p><a href="https://giggal.ai/email-checker">Free email verifier</a></div>
-<div class="card"><h3>Bulk email verification</h3><p>Upload a CSV and clean the whole list before your next send.</p><a href="https://giggal.ai/bulk-email-verifier">Bulk email verification tool</a></div>
 <div class="card"><h3>Zapier and HubSpot</h3><p>Verify new leads automatically as they arrive.</p><a href="https://giggal.ai/integrations">Email verification integrations</a></div>
 <div class="card"><h3>RapidAPI</h3><p>Use the same API through the RapidAPI marketplace and its billing.</p><a href="https://rapidapi.com/SupportTeam-gqsyLfHHk/api/giggal-email-verification1">RapidAPI listing</a></div>
 </div>
@@ -269,6 +280,7 @@ const results = await fetch(
 
 <section id="faq">
 <h2>Frequently asked questions</h2>
+<details><summary>What is an email verifier?</summary><p>An email verifier checks whether an email address can receive mail. It checks the format, the domain's mail servers and the mailbox itself, without sending an email. Giggal.ai also resolves catch-all domains, which most verifiers mark as risky.</p></details>
 <details><summary>Is there a free email verification API?</summary><p>Yes. A new Giggal.ai account gets 1,000 free credits with no card required, and the credits do not expire. One credit verifies one address through the API.</p></details>
 <details><summary>What is the difference between an email verification API and an email validation API?</summary><p>Most people use the two terms for the same thing. Validation often means checking the format, and verification means confirming that the mailbox exists. The Giggal.ai API does both in one call.</p></details>
 <details><summary>Can I run bulk email verification through the API?</summary><p>Yes. <code>POST /v1/verify-batch</code> accepts up to 50,000 addresses in one job. You poll the job status and then fetch the results page by page.</p></details>
