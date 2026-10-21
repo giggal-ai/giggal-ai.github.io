@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://giggal-ai.github.io/sitemap.xml

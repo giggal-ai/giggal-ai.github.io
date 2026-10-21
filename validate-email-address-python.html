@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Validate an Email Address in Python: email-validator, MX Lookup and API</title>
+<meta name="description" content="How to validate an email address in Python: the email-validator library, MX record checks with dnspython, and a mailbox check through an API. All code tested.">
+<link rel="canonical" href="https://giggal-ai.github.io/validate-email-address-python.html">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Giggal.ai Developer Hub">
+<meta property="og:title" content="Validate an Email Address in Python">
+<meta property="og:description" content="email-validator, MX lookups with dnspython, and the typo domain that passes both. All code tested.">
+<meta property="og:url" content="https://giggal-ai.github.io/validate-email-address-python.html">
+<meta property="og:image" content="https://giggal-ai.github.io/og-card.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/style.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"TechArticle","headline":"Validate an Email Address in Python: email-validator, MX Lookup and API","datePublished":"2026-10-21","dateModified":"2026-10-21","author":{"@type":"Organization","name":"Giggal.ai","url":"https://giggal.ai"},"publisher":{"@type":"Organization","name":"Giggal.ai","logo":{"@type":"ImageObject","url":"https://giggal-ai.github.io/giggal-logo-wordmark.png"}},"mainEntityOfPage":"https://giggal-ai.github.io/validate-email-address-python.html","proficiencyLevel":"Beginner"},
+{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Developer Hub","item":"https://giggal-ai.github.io/"},{"@type":"ListItem","position":2,"name":"Validate an email address in Python","item":"https://giggal-ai.github.io/validate-email-address-python.html"}]},
+{"@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"What is the best way to validate an email address in Python?","acceptedAnswer":{"@type":"Answer","text":"Use the email-validator library for the format and domain check, and an email verification API when you need to know that the mailbox exists. Avoid writing your own regex for production code."}},
+{"@type":"Question","name":"Does email-validator check if the email exists?","acceptedAnswer":{"@type":"Answer","text":"No. With check_deliverability on, it checks that the domain can receive mail. It does not contact the mail server, so it cannot tell whether the mailbox exists."}}
+]}
+]}
+</script>
+</head>
+<body>
+<header class="top">
+<div class="wrap">
+<a href="https://giggal.ai" aria-label="Giggal.ai home"><img src="/giggal-logo-wordmark.png" alt="Giggal.ai" width="124" height="30"></a>
+<nav class="toc" aria-label="Site"><a href="/">Developer Hub</a><a href="/email-validation-javascript.html">JavaScript guide</a></nav>
+</div>
+</header>
+
+<main class="wrap">
+<p class="crumbs"><a href="/">Developer Hub</a> / Validate an email address in Python</p>
+<div class="hero">
+<h1>Validate an Email Address in Python</h1>
+<p class="lead">Three ways to validate an email address in Python, from a format check to a full mailbox check. You can validate email address syntax with one library call, check the domain with a DNS lookup, and confirm the mailbox with an API. We tested each one on the same addresses, including a typo domain that fools the most popular library.</p>
+<p class="note">Tested with email-validator 2.3.0 and dnspython 2.9.0 on 21 October 2026.</p>
+</div>
+
+<section id="library">
+<h2>Step 1: validate the format with email-validator</h2>
+<p>The <code>email-validator</code> package is the most common choice. It checks the format against the email standards, normalizes the address, and can check the domain. Install it with pip:</p>
+<pre><code>pip install email-validator</code></pre>
+<pre><code>from email_validator import validate_email, EmailNotValidError
+
+def check(address: str, deliverability: bool = True):
+    try:
+        info = validate_email(address, check_deliverability=deliverability)
+        return True, info.normalized
+    except EmailNotValidError as err:
+        return False, str(err)</code></pre>
+<p>Results from our test run:</p>
+<div class="tablewrap">
+<table>
+<thead><tr><th>Address</th><th>Result</th><th>Message or normalized address</th></tr></thead>
+<tbody>
+<tr><td><code>Jane.Smith@Example.co.uk</code></td><td class="pass">valid</td><td><code>Jane.Smith@example.co.uk</code> (domain lowercased)</td></tr>
+<tr><td><code>name@gmailcom</code></td><td class="fail">invalid</td><td>The part after the @-sign is not valid. It should have a period.</td></tr>
+<tr><td><code>jane..smith@example.com</code></td><td class="fail">invalid</td><td>An email address cannot have two periods in a row.</td></tr>
+<tr><td><code>jane@example.com</code></td><td class="fail">invalid</td><td>The domain name example.com does not accept email.</td></tr>
+<tr><td><code>jane@this-domain-does-not-exist-91827.com</code></td><td class="fail">invalid</td><td>The domain name this-domain-does-not-exist-91827.com does not exist.</td></tr>
+<tr><td><code>jürgen@example.de</code></td><td class="pass">valid</td><td>International addresses are supported</td></tr>
+<tr><td><code>jane@gmial.com</code></td><td class="pass">valid</td><td>Passes, even though gmial.com is a typo. See below.</td></tr>
+</tbody>
+</table>
+</div>
+<p>Use <code>info.normalized</code>, not the raw input, when you save the address. It lowercases the domain and applies the standard Unicode form, so the same person is not stored twice. Older code and tutorials often read <code>.email</code> instead. That still works, but <code>.normalized</code> is the name current versions document.</p>
+<p>The deliverability check makes a DNS query, so it adds a short delay. For bulk imports or offline tests, pass <code>check_deliverability=False</code> to check only the format.</p>
+</section>
+
+<section id="typo">
+<h2>Why jane@gmial.com passes</h2>
+<p>gmial.com has no MX records, so it has no mail servers. But it does have an A record, the address of a website. The email standard (RFC 5321) says a sending server may fall back to the A record when there are no MX records, and email-validator follows that rule. So the typo passes.</p>
+<p>That is correct by the standard, but it is not what you want on a signup form. Almost every real mailbox domain publishes MX records, and a typo of a big provider almost never belongs to a real customer.</p>
+</section>
+
+<section id="mx">
+<h2>Step 2: require MX records with dnspython</h2>
+<p>To catch typo domains, check for MX records yourself. <code>dnspython</code> is installed with email-validator, or on its own with <code>pip install dnspython</code>.</p>
+<pre><code>import dns.resolver
+
+def domain_accepts_mail(domain: str) -&gt; bool:
+    try:
+        answers = dns.resolver.resolve(domain, "MX")
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+        return False
+    hosts = [str(r.exchange) for r in answers]
+    # A null MX (RFC 7505) points to "." and means the domain takes no mail.
+    return any(h not in (".", "") for h in hosts)</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th>Domain</th><th>Result</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td><code>gmail.com</code></td><td class="pass">True</td><td>Has MX records</td></tr>
+<tr><td><code>gmial.com</code></td><td class="fail">False</td><td>No MX records, only an A record</td></tr>
+<tr><td><code>example.com</code></td><td class="fail">False</td><td>Publishes a null MX, so it accepts no mail</td></tr>
+</tbody>
+</table>
+</div>
+<p>Timeouts raise a different error, <code>dns.resolver.LifetimeTimeout</code>. Treat that as "unknown" and try again later, rather than rejecting the address.</p>
+</section>
+
+<section id="api">
+<h2>Step 3: confirm the mailbox with an email verification API</h2>
+<p>The first two steps prove the address is well formed and the domain can receive mail. They cannot tell you whether <code>jane</code> has a mailbox at that domain. That needs an SMTP check against the mail server. Most cloud hosts block outbound port 25, so in practice this check runs through an <a href="https://giggal.ai/email-verification-api">email verification API</a>.</p>
+<pre><code>import os
+import requests
+
+def verify_mailbox(address: str) -&gt; str:
+    response = requests.post(
+        "https://api.giggal.ai/v1/verify",
+        json={"email": address},
+        headers={"Authorization": f"Bearer {os.environ['GIGGAL_API_KEY']}"},
+        timeout=30,
+    )
+    result = response.json()
+    if not result.get("success"):
+        raise RuntimeError(result.get("error"))
+    return result["data"]["status"]  # deliverable, undeliverable or unknown</code></pre>
+<p>The API also handles catch-all domains, where the mail server accepts every address. It returns a valid or invalid result for them in the <code>catch_all_verdict</code> field. New accounts get 1,000 free credits. The <a href="/">Developer Hub</a> lists every endpoint, including the bulk email verification endpoint for lists of up to 50,000 addresses.</p>
+</section>
+
+<section id="together">
+<h2>Putting it together</h2>
+<p>Run the cheap checks first and call the API only for addresses that pass them. This saves credits and keeps your form fast.</p>
+<pre><code>def validate(address: str) -&gt; str:
+    ok, value = check(address, deliverability=False)   # format only, no network
+    if not ok:
+        return "invalid: " + value
+    domain = value.split("@")[1]
+    if not domain_accepts_mail(domain):
+        return "invalid: domain has no mail servers"
+    return verify_mailbox(value)                       # mailbox check via the API</code></pre>
+</section>
+
+<section id="regex">
+<h2>What about a regex?</h2>
+<p>A regex is fine for a quick hint in a script, but it is a poor final check. Our <a href="/email-validation-javascript.html">JavaScript email validation tests</a> show how common patterns accept addresses like <code>.jane@example.com</code> and <code>jane..smith@example.com</code>, which mail servers reject. The same patterns behave the same way in Python's <code>re</code> module. email-validator already handles these cases, so prefer it over writing your own pattern.</p>
+<p>If you only need to check one address by hand, paste it into the free <a href="https://giggal.ai/email-checker">email verifier</a> instead.</p>
+</section>
+
+<section id="faq">
+<h2>Frequently asked questions</h2>
+<details><summary>What is the best way to validate an email address in Python?</summary><p>Use the email-validator library for the format and domain check, and an email verification API when you need to know that the mailbox exists. Avoid writing your own regex for production code.</p></details>
+<details><summary>Does email-validator check if the email exists?</summary><p>No. With check_deliverability on, it checks that the domain can receive mail. It does not contact the mail server, so it cannot tell whether the mailbox exists.</p></details>
+<details><summary>Can Python check a mailbox over SMTP directly?</summary><p>Yes, with smtplib, but outbound port 25 is blocked on most cloud servers, many mail servers rate limit or greylist unknown senders, and catch-all domains accept every address. These are the reasons most teams use an API for this step.</p></details>
+</section>
+</main>
+
+<footer>
+<div class="wrap">
+<p>Part of the <a href="/">Giggal.ai Developer Hub</a>. <a href="https://giggal.ai">Giggal.ai</a> is an email verification service. Contact: info@giggal.ai.</p>
+</div>
+</footer>
+</body>
+</html>

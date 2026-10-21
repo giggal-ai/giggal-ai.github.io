@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Email Validation in JavaScript: Regex, HTML5 and MX Checks (Tested)</title>
+<meta name="description" content="How to validate an email address in JavaScript: three email regex patterns tested on 18 real cases, the HTML5 email input and an MX lookup in Node.js.">
+<link rel="canonical" href="https://giggal-ai.github.io/email-validation-javascript.html">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Giggal.ai Developer Hub">
+<meta property="og:title" content="Email Validation in JavaScript: Regex, HTML5 and MX Checks (Tested)">
+<meta property="og:description" content="Three email regex patterns tested on 18 real cases, plus HTML5 and Node.js MX checks.">
+<meta property="og:url" content="https://giggal-ai.github.io/email-validation-javascript.html">
+<meta property="og:image" content="https://giggal-ai.github.io/og-card.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/style.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"TechArticle","headline":"Email Validation in JavaScript: Regex, HTML5 and MX Checks (Tested)","datePublished":"2026-10-21","dateModified":"2026-10-21","author":{"@type":"Organization","name":"Giggal.ai","url":"https://giggal.ai"},"publisher":{"@type":"Organization","name":"Giggal.ai","logo":{"@type":"ImageObject","url":"https://giggal-ai.github.io/giggal-logo-wordmark.png"}},"mainEntityOfPage":"https://giggal-ai.github.io/email-validation-javascript.html","proficiencyLevel":"Beginner"},
+{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Developer Hub","item":"https://giggal-ai.github.io/"},{"@type":"ListItem","position":2,"name":"Email validation in JavaScript","item":"https://giggal-ai.github.io/email-validation-javascript.html"}]},
+{"@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"What is the best regex for email validation in JavaScript?","acceptedAnswer":{"@type":"Answer","text":"For most forms, use the pattern from the HTML standard, which is what browsers use for type=\"email\", and add a check for a dot in the domain. A regex can only check format. It cannot tell you whether the mailbox exists."}},
+{"@type":"Question","name":"Can JavaScript check if an email address really exists?","acceptedAnswer":{"@type":"Answer","text":"Not in the browser. Server-side JavaScript can look up the domain's MX records, but confirming a mailbox needs an SMTP check, which most hosting networks block on port 25. An email verification API runs that check for you."}},
+{"@type":"Question","name":"Does input type=\"email\" validate email addresses?","acceptedAnswer":{"@type":"Answer","text":"It checks the format in the browser using the HTML standard's pattern. It accepts addresses without a dot in the domain, such as user@localhost, and it can be bypassed, so always validate again on the server."}}
+]}
+]}
+</script>
+</head>
+<body>
+<header class="top">
+<div class="wrap">
+<a href="https://giggal.ai" aria-label="Giggal.ai home"><img src="/giggal-logo-wordmark.png" alt="Giggal.ai" width="124" height="30"></a>
+<nav class="toc" aria-label="Site"><a href="/">Developer Hub</a><a href="/validate-email-address-python.html">Python guide</a></nav>
+</div>
+</header>
+
+<main class="wrap">
+<p class="crumbs"><a href="/">Developer Hub</a> / Email validation in JavaScript</p>
+<div class="hero">
+<h1>Email Validation in JavaScript: Regex, HTML5 and MX Checks</h1>
+<p class="lead">How to validate an email address in JavaScript, step by step. We tested three common email regex patterns on 18 real addresses, so you can see exactly what each one accepts and rejects. Then we add the HTML5 email input, a server-side MX lookup in Node.js, and the point where a regex is no longer enough.</p>
+<p class="note">Tested with Node.js 26 on 21 October 2026. Every code sample on this page runs as shown.</p>
+</div>
+
+<div class="toc-box">
+<strong>On this page</strong>
+<ol>
+<li><a href="#layers">The three layers of email validation</a></li>
+<li><a href="#patterns">Three email regex patterns for JavaScript</a></li>
+<li><a href="#results">Test results: 18 addresses, 3 patterns</a></li>
+<li><a href="#html5">Validate email with the HTML5 input</a></li>
+<li><a href="#form">A complete form validation example</a></li>
+<li><a href="#mx">Check the domain's MX records in Node.js</a></li>
+<li><a href="#limits">When a regex is not enough</a></li>
+<li><a href="#faq">FAQ</a></li>
+</ol>
+</div>
+
+<section id="layers">
+<h2>The three layers of email validation</h2>
+<p>"Validate an email address" can mean three different checks. Each one catches different problems:</p>
+<ol>
+<li><strong>Format.</strong> Does the text look like an email address? A regex or the HTML5 email input does this. It catches typing mistakes like <code>name@gmailcom</code>.</li>
+<li><strong>Domain.</strong> Can the domain receive email? A DNS lookup of the domain's MX records does this. It catches domains that do not exist.</li>
+<li><strong>Mailbox.</strong> Does this exact mailbox exist? Only an SMTP check against the mail server can answer this. It catches addresses like <code>old.employee@realcompany.com</code>, which pass the first two checks and still bounce.</li>
+</ol>
+<p>JavaScript in the browser can only do layer 1. Node.js on a server can do layers 1 and 2. Layer 3 needs outbound connections on port 25, which most cloud hosts block, so it is usually done through an email verification API.</p>
+</section>
+
+<section id="patterns">
+<h2>Three email regex patterns for JavaScript</h2>
+<p>Below are three patterns you can use for email validation with regex in JavaScript, from the shortest to the strictest. All three work with <code>pattern.test(email)</code>.</p>
+<h3>Pattern 1: the short pattern</h3>
+<p>This is the pattern you will see in most answers online. It checks for one @, no spaces, and a dot after the @.</p>
+<pre><code>const simple = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;</code></pre>
+<h3>Pattern 2: the HTML standard pattern</h3>
+<p>The HTML standard defines the pattern that browsers use for <code>&lt;input type="email"&gt;</code>. It is stricter about which characters are allowed and checks each part of the domain.</p>
+<pre><code>const html5 = /^[a-zA-Z0-9.!#$%&amp;'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;</code></pre>
+<h3>Pattern 3: the practical pattern</h3>
+<p>This version starts from the HTML standard pattern and adds four rules that real mail servers apply: no dot at the start or end of the local part, no two dots in a row, at least one dot in the domain, and a top-level domain of at least two letters.</p>
+<pre><code>const practical = /^(?!\.)(?!.*\.\.)[a-zA-Z0-9.!#$%&amp;'*+/=?^_`{|}~-]+(?&lt;!\.)@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}$/;
+
+function isValidEmailFormat(email) {
+  return practical.test(email.trim());
+}</code></pre>
+<p>The <code>(?&lt;!\.)</code> part is a lookbehind. It works in every current browser and in Node.js.</p>
+</section>
+
+<section id="results">
+<h2>Test results: 18 addresses, 3 patterns</h2>
+<p>We ran each pattern on the same 18 addresses. A green "yes" means the pattern accepts the address.</p>
+<div class="tablewrap">
+<table>
+<thead><tr><th>Address</th><th>Short</th><th>HTML5</th><th>Practical</th><th>Should it pass?</th></tr></thead>
+<tbody>
+<tr><td><code>jane.smith@example.com</code></td><td class="pass">yes</td><td class="pass">yes</td><td class="pass">yes</td><td>Yes</td></tr>
+<tr><td><code>o'brien@example.co.uk</code></td><td class="pass">yes</td><td class="pass">yes</td><td class="pass">yes</td><td>Yes, apostrophes are allowed</td></tr>
+<tr><td><code>name+news@gmail.com</code></td><td class="pass">yes</td><td class="pass">yes</td><td class="pass">yes</td><td>Yes, plus tags are allowed</td></tr>
+<tr><td><code>user@sub.example.io</code></td><td class="pass">yes</td><td class="pass">yes</td><td class="pass">yes</td><td>Yes</td></tr>
+<tr><td><code>plainaddress</code></td><td class="fail">no</td><td class="fail">no</td><td class="fail">no</td><td>No</td></tr>
+<tr><td><code>name@gmailcom</code></td><td class="fail">no</td><td class="pass">yes</td><td class="fail">no</td><td>No, missing dot</td></tr>
+<tr><td><code>name@@gmail.com</code></td><td class="fail">no</td><td class="fail">no</td><td class="fail">no</td><td>No</td></tr>
+<tr><td><code>name @gmail.com</code></td><td class="fail">no</td><td class="fail">no</td><td class="fail">no</td><td>No, contains a space</td></tr>
+<tr><td><code>.jane@example.com</code></td><td class="pass">yes</td><td class="pass">yes</td><td class="fail">no</td><td>No, starts with a dot</td></tr>
+<tr><td><code>jane.@example.com</code></td><td class="pass">yes</td><td class="pass">yes</td><td class="fail">no</td><td>No, dot before the @</td></tr>
+<tr><td><code>jane..smith@example.com</code></td><td class="pass">yes</td><td class="pass">yes</td><td class="fail">no</td><td>No, two dots in a row</td></tr>
+<tr><td><code>jane@example..com</code></td><td class="pass">yes</td><td class="fail">no</td><td class="fail">no</td><td>No</td></tr>
+<tr><td><code>jane@-example.com</code></td><td class="pass">yes</td><td class="fail">no</td><td class="fail">no</td><td>No, domain starts with a hyphen</td></tr>
+<tr><td><code>user@localhost</code></td><td class="fail">no</td><td class="pass">yes</td><td class="fail">no</td><td>Not for a public signup form</td></tr>
+<tr><td><code>jane@example.c</code></td><td class="pass">yes</td><td class="pass">yes</td><td class="fail">no</td><td>No, one-letter ending</td></tr>
+<tr><td><code>jane@exa_mple.com</code></td><td class="pass">yes</td><td class="fail">no</td><td class="fail">no</td><td>No, underscore in domain</td></tr>
+<tr><td><code>"quoted name"@example.com</code></td><td class="fail">no</td><td class="fail">no</td><td class="fail">no</td><td>Valid in the email standard, but rare</td></tr>
+<tr><td><code>jürgen@example.de</code></td><td class="pass">yes</td><td class="fail">no</td><td class="fail">no</td><td>Valid only on servers that support international addresses</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>What the results show:</strong></p>
+<ul>
+<li>Eleven of the 18 addresses are clearly broken. The short pattern accepted 7 of those 11, mostly addresses with a dot or hyphen in the wrong place. It is fine for a quick hint, but not as your only check.</li>
+<li>The HTML5 pattern accepted 5 of the 11 broken addresses. It allows a local part that starts, ends or repeats a dot, and it allows a domain with no dot, so <code>name@gmailcom</code> and <code>user@localhost</code> pass.</li>
+<li>The practical pattern rejected all 11 broken addresses and <code>user@localhost</code>, and accepted all 4 normal ones.</li>
+<li>None of the three accepts quoted local parts, and only the short pattern accepts non-ASCII letters. If your users have addresses like <code>jürgen@example.de</code>, test your own pattern carefully, or skip strict regex checks and confirm the address by email.</li>
+</ul>
+</section>
+
+<section id="html5">
+<h2>Validate email with the HTML5 input</h2>
+<p>The simplest browser check needs no JavaScript at all:</p>
+<pre><code>&lt;input type="email" name="email" required autocomplete="email"&gt;</code></pre>
+<p>The browser blocks the form and shows a message if the format is wrong. In JavaScript you can ask the input directly with <code>input.checkValidity()</code>, or read <code>input.validity.typeMismatch</code>.</p>
+<p>Two things to know. First, the browser uses the HTML standard pattern, so it accepts <code>name@gmailcom</code>, as the table shows. Add a <code>pattern</code> attribute if you want the stricter rule. Second, anyone can bypass browser checks by sending the request directly, so always validate again on the server.</p>
+</section>
+
+<section id="form">
+<h2>A complete form validation example</h2>
+<p>This example combines the HTML5 input with the practical pattern, trims spaces, and shows a clear message:</p>
+<pre><code>&lt;form id="signup" novalidate&gt;
+  &lt;label for="email"&gt;Email&lt;/label&gt;
+  &lt;input id="email" type="email" name="email" required autocomplete="email"&gt;
+  &lt;p id="email-error" role="alert"&gt;&lt;/p&gt;
+  &lt;button type="submit"&gt;Sign up&lt;/button&gt;
+&lt;/form&gt;
+
+&lt;script&gt;
+const practical = /^(?!\.)(?!.*\.\.)[a-zA-Z0-9.!#$%&amp;'*+/=?^_`{|}~-]+(?&lt;!\.)@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}$/;
+
+document.getElementById('signup').addEventListener('submit', (event) =&gt; {
+  const input = document.getElementById('email');
+  const error = document.getElementById('email-error');
+  const email = input.value.trim();
+
+  if (!email) {
+    error.textContent = 'Please enter your email address.';
+  } else if (!practical.test(email)) {
+    error.textContent = 'Please check your email address. It looks incomplete.';
+  } else {
+    error.textContent = '';
+    return; // format is fine: let the form submit, and verify again on the server
+  }
+  event.preventDefault();
+});
+&lt;/script&gt;</code></pre>
+</section>
+
+<section id="mx">
+<h2>Check the domain's MX records in Node.js</h2>
+<p>On the server, Node.js can look up the domain's mail servers with the built-in <code>dns</code> module. No package is needed.</p>
+<pre><code>import { promises as dns } from 'node:dns';
+
+async function domainAcceptsMail(email) {
+  const domain = email.split('@').pop().toLowerCase();
+  try {
+    const records = await dns.resolveMx(domain);
+    // A "null MX" (RFC 7505) means the domain accepts no mail at all.
+    const usable = records.filter(r =&gt; r.exchange &amp;&amp; r.exchange !== '.');
+    return usable.length &gt; 0;
+  } catch (err) {
+    if (err.code === 'ENOTFOUND' || err.code === 'ENODATA') return false;
+    throw err; // timeouts and server errors: treat as unknown, not invalid
+  }
+}</code></pre>
+<p>Our test results:</p>
+<div class="tablewrap">
+<table>
+<thead><tr><th>Address</th><th>Result</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td><code>jane@gmail.com</code></td><td class="pass">true</td><td>gmail.com has MX records</td></tr>
+<tr><td><code>jane@gmial.com</code></td><td class="fail">false</td><td>The typo domain has no MX records</td></tr>
+<tr><td><code>jane@example.com</code></td><td class="fail">false</td><td>example.com publishes a null MX: it accepts no mail</td></tr>
+<tr><td><code>jane@this-domain-does-not-exist-91827.com</code></td><td class="fail">false</td><td>The domain does not exist</td></tr>
+</tbody>
+</table>
+</div>
+<p>One detail: the email standard (RFC 5321) lets a sending server fall back to a domain's A record when there are no MX records. This function treats "no MX" as invalid, which is stricter than the standard but catches typo domains like gmial.com. That domain has a website address record but no mail servers.</p>
+</section>
+
+<section id="limits">
+<h2>When a regex is not enough</h2>
+<p>A perfect format and a working domain still do not prove the mailbox exists. These addresses pass every check on this page and can still bounce:</p>
+<ul>
+<li><strong>Closed mailboxes.</strong> <code>former.employee@realcompany.com</code> has a valid format and a real domain, but the mailbox was deleted.</li>
+<li><strong>Catch-all domains.</strong> Some company servers accept mail for any address during delivery and bounce or discard it later. A simple mailbox check gets "yes" for every address.</li>
+<li><strong>Disposable addresses.</strong> Temporary inbox services pass format and MX checks, then expire.</li>
+<li><strong>Secure email gateways.</strong> Proofpoint, Mimecast and Barracuda often accept every recipient during the check and filter later.</li>
+</ul>
+<p>To confirm the mailbox itself, call an <a href="https://giggal.ai/email-verification-api">email verification API</a> from your server after the format check passes. It runs the SMTP check and handles catch-all domains. The <a href="/">free email verification API</a> on this hub includes 1,000 credits, and the call takes a few lines:</p>
+<pre><code>const res = await fetch('https://api.giggal.ai/v1/verify', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${process.env.GIGGAL_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({ email }),
+});
+const { data } = await res.json();
+// data.status: deliverable, undeliverable or unknown</code></pre>
+<p>Want to check a single address by hand first? Paste it into the free <a href="https://giggal.ai/email-checker">email verifier</a>.</p>
+</section>
+
+<section id="faq">
+<h2>Frequently asked questions</h2>
+<details><summary>What is the best regex for email validation in JavaScript?</summary><p>For most forms, use the pattern from the HTML standard, which is what browsers use for type="email", and add a check for a dot in the domain. The practical pattern above does this and passed every case in our test. A regex can only check format. It cannot tell you whether the mailbox exists.</p></details>
+<details><summary>Can JavaScript check if an email address really exists?</summary><p>Not in the browser. Server-side JavaScript can look up the domain's MX records, but confirming a mailbox needs an SMTP check, which most hosting networks block on port 25. An email verification API runs that check for you.</p></details>
+<details><summary>Does input type="email" validate email addresses?</summary><p>It checks the format in the browser using the HTML standard's pattern. It accepts addresses without a dot in the domain, such as user@localhost, and it can be bypassed, so always validate again on the server.</p></details>
+<details><summary>Should I validate email on the client or the server?</summary><p>Both. Validate in the browser to give people instant feedback, and validate again on the server, because browser checks can be skipped.</p></details>
+<details><summary>Why does my regex reject valid addresses?</summary><p>Common causes are rejecting the plus sign, apostrophes or long top-level domains such as .technology. Test your pattern against real customer addresses before you ship it.</p></details>
+</section>
+</main>
+
+<footer>
+<div class="wrap">
+<p>Part of the <a href="/">Giggal.ai Developer Hub</a>. <a href="https://giggal.ai">Giggal.ai</a> is an email verification service. Contact: info@giggal.ai.</p>
+</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free Email Verification API for Developers | Giggal.ai Developer Hub</title>
+<meta name="description" content="Free email verification API with 1,000 credits. Verify one address or run bulk email verification jobs. Endpoints, Node.js and Python code, MCP and n8n.">
+<link rel="canonical" href="https://giggal-ai.github.io/">
+<meta name="robots" content="index, follow">
+<!-- GSC_VERIFICATION -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Giggal.ai Developer Hub">
+<meta property="og:title" content="Free Email Verification API for Developers">
+<meta property="og:description" content="Verify one address or a whole list through the API. Endpoints, code examples, MCP server and n8n node.">
+<meta property="og:url" content="https://giggal-ai.github.io/">
+<meta property="og:image" content="https://giggal-ai.github.io/og-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/style.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"Organization","name":"Giggal.ai","url":"https://giggal.ai","logo":"https://giggal-ai.github.io/giggal-logo-wordmark.png","email":"info@giggal.ai","sameAs":["https://github.com/giggal-ai"]},
+{"@type":"WebSite","name":"Giggal.ai Developer Hub","url":"https://giggal-ai.github.io/"},
+{"@type":"WebAPI","name":"Giggal.ai Email Verification API","description":"REST API that verifies whether an email address exists, including catch-all domains and inboxes behind secure email gateways.","documentation":"https://giggal.ai/public/docs","provider":{"@type":"Organization","name":"Giggal.ai","url":"https://giggal.ai"}},
+{"@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"Is there a free email verification API?","acceptedAnswer":{"@type":"Answer","text":"Yes. A new Giggal.ai account gets 1,000 free credits with no card required, and the credits do not expire. One credit verifies one address through the API."}},
+{"@type":"Question","name":"What is the difference between an email verification API and an email validation API?","acceptedAnswer":{"@type":"Answer","text":"Most people use the two terms for the same thing. Validation often means checking the format, and verification means confirming that the mailbox exists. The Giggal.ai API does both in one call."}},
+{"@type":"Question","name":"Can I run bulk email verification through the API?","acceptedAnswer":{"@type":"Answer","text":"Yes. POST /v1/verify-batch accepts up to 50,000 addresses in one job. You poll the job status and then fetch the results page by page."}},
+{"@type":"Question","name":"Do I need an API key to use the MCP server in Claude or ChatGPT?","acceptedAnswer":{"@type":"Answer","text":"No. Claude and ChatGPT connect to https://mcp.giggal.ai/mcp over OAuth. Code editors and CLI clients use your API key as a Bearer token."}},
+{"@type":"Question","name":"Can I call the API from browser JavaScript?","acceptedAnswer":{"@type":"Answer","text":"Call it from your server. A key placed in browser code can be copied by anyone who opens the page."}}
+]}
+]}
+</script>
+</head>
+<body>
+<header class="top">
+<div class="wrap">
+<a href="https://giggal.ai" aria-label="Giggal.ai home"><img src="/giggal-logo-wordmark.png" alt="Giggal.ai" width="124" height="30"></a>
+<nav class="toc" aria-label="On this page">
+<a href="#quick-start">Quick start</a>
+<a href="#endpoints">Endpoints</a>
+<a href="#bulk">Bulk</a>
+<a href="#mcp">MCP</a>
+<a href="#guides">Guides</a>
+<a href="#faq">FAQ</a>
+</nav>
+</div>
+</header>
+
+<main class="wrap">
+<div class="hero">
+<h1>Free Email Verification API for Developers</h1>
+<p class="lead">The Giggal.ai email verification API tells you whether an email address exists before you send to it. Verify one address at signup, run bulk email verification on a full list, or let your AI assistant check addresses for you. It also returns a real valid or invalid result for catch-all domains and for inboxes behind secure email gateways, where most email verifier tools stop at "risky" or "unknown".</p>
+<div class="btns">
+<a class="btn primary" href="https://emailverifier.giggal.ai/sign-up">Get a free API key</a>
+<a class="btn ghost" href="https://giggal.ai/public/docs">Full API reference</a>
+</div>
+<p class="note">1,000 free credits for every new account. No card required. Credits do not expire.</p>
+</div>
+
+<section id="quick-start">
+<h2>Verify an email address with one API call</h2>
+<p>Send a POST request to <code>/v1/verify</code> with your API key as a Bearer token. Every endpoint uses the base URL <code>https://api.giggal.ai</code>.</p>
+<pre><code>curl -X POST https://api.giggal.ai/v1/verify \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"alex.smith@example.com"}'</code></pre>
+<h3>What the email validation API returns</h3>
+<p>One response covers the format check, the domain's mail servers, the mailbox check and the address type. A trimmed example:</p>
+<pre><code>{
+  "success": true,
+  "data": {
+    "email": "alex.smith@example.com",
+    "is_valid": true,
+    "status": "deliverable",
+    "risk_level": "low",
+    "deliverability_score": 92,
+    "catch_all_score": 89,
+    "catch_all_verdict": "valid",
+    "details": {
+      "general": { "domain": "example.com", "reason": "Mailbox confirmed deliverable" },
+      "attributes": {
+        "free_email": false,
+        "role_account": false,
+        "disposable": false,
+        "catch_all": true,
+        "has_plus_tag": false,
+        "mailbox_full": false,
+        "no_reply": false
+      },
+      "mail_server": { "smtp_provider": "google", "mx_record": "aspmx.l.google.com" }
+    }
+  },
+  "meta": { "creditsUsed": 1 }
+}</code></pre>
+<p>Look at <code>catch_all</code> and <code>catch_all_verdict</code>. This domain accepts mail for any address, so a basic check cannot tell whether the person exists. The API runs a deeper check and returns valid or invalid. The <a href="https://giggal.ai/catch-all-verification">catch-all email verification</a> page explains how it works.</p>
+</section>
+
+<section id="endpoints">
+<h2>Email verification API endpoints</h2>
+<div class="tablewrap">
+<table>
+<thead><tr><th>Method</th><th>Endpoint</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td>POST</td><td><code>/v1/verify</code></td><td>Verify one email address in real time. Body: <code>{"email": "..."}</code></td></tr>
+<tr><td>POST</td><td><code>/v1/verify-batch</code></td><td>Start a bulk email verification job with up to 50,000 addresses. Returns a <code>jobId</code>.</td></tr>
+<tr><td>GET</td><td><code>/v1/jobs/{jobId}</code></td><td>Check a job's status: queued, processing, completed or failed.</td></tr>
+<tr><td>GET</td><td><code>/v1/jobs/{jobId}/results</code></td><td>Fetch job results, paginated with <code>page</code> and <code>limit</code>.</td></tr>
+<tr><td>GET</td><td><code>/v1/credits</code></td><td>Check your remaining credits. Also a quick test that a key works.</td></tr>
+</tbody>
+</table>
+</div>
+<h3>Authentication and keys</h3>
+<p>Send your key in the <code>Authorization: Bearer YOUR_API_KEY</code> header. Create keys in the Developer API tab of the dashboard. Keep keys on your server, never in browser code or a public repository.</p>
+<h3>What the free tier includes</h3>
+<p>Every new account gets 1,000 free credits, with no card and no expiry date. One credit verifies one address. On single checks, catch-all resolution is included in that same credit. The free credits work on every endpoint, including bulk jobs. When you need more, current prices are on the <a href="https://giggal.ai/pricing">pricing page</a>.</p>
+</section>
+
+<section id="examples">
+<h2>Email verification API examples in Node.js and Python</h2>
+<h3>Node.js (Node 18 or later)</h3>
+<pre><code>const res = await fetch('https://api.giggal.ai/v1/verify', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${process.env.GIGGAL_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({ email: 'alex.smith@example.com' }),
+});
+
+const data = await res.json();
+if (data.success) {
+  console.log('Status:', data.data.status);                     // deliverable, undeliverable, unknown
+  console.log('Catch-all result:', data.data.catch_all_verdict); // valid or invalid
+} else {
+  console.error('Verification error:', data.error);
+}</code></pre>
+<h3>Python (requests)</h3>
+<pre><code>import os
+import requests
+
+response = requests.post(
+    "https://api.giggal.ai/v1/verify",
+    json={"email": "alex.smith@example.com"},
+    headers={"Authorization": f"Bearer {os.environ['GIGGAL_API_KEY']}"},
+    timeout=30,
+)
+result = response.json()
+
+if result.get("success"):
+    print("Status:", result["data"]["status"])
+    print("Catch-all result:", result["data"].get("catch_all_verdict"))
+else:
+    print("Error:", result.get("error"))</code></pre>
+<p>Every response field is described in the <a href="https://giggal.ai/email-verification-api">email verification API</a> guide. If you check addresses inside a signup form, the <a href="https://giggal.ai/email-validation-api">email validation API</a> guide shows the real-time setup.</p>
+</section>
+
+<section id="bulk">
+<h2>Bulk email verification API: verify a whole list</h2>
+<p>For a list, send one batch job instead of thousands of single calls. Poll the job every 10 to 15 seconds until its status is <code>completed</code>, then page through the results. Add an <code>Idempotency-Key</code> header so a retried request returns the existing job instead of creating a second one.</p>
+<pre><code>// 1. Start the job (up to 50,000 addresses)
+const submit = await fetch('https://api.giggal.ai/v1/verify-batch', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${process.env.GIGGAL_API_KEY}`,
+    'Content-Type': 'application/json',
+    'Idempotency-Key': 'leads-2026-10-21-01',
+  },
+  body: JSON.stringify({
+    name: 'Q4 leads',
+    emails: ['alex.smith@example.com', 'maria.garcia@example.org'],
+  }),
+});
+const { data: job } = await submit.json();
+
+// 2. Poll: GET https://api.giggal.ai/v1/jobs/${job.jobId}
+
+// 3. Fetch results, 500 per page
+const results = await fetch(
+  `https://api.giggal.ai/v1/jobs/${job.jobId}/results?page=1&amp;limit=500`,
+  { headers: { 'Authorization': `Bearer ${process.env.GIGGAL_API_KEY}` } }
+);</code></pre>
+<p>Prefer a CSV upload to code? The <a href="https://giggal.ai/bulk-email-verifier">bulk email verifier</a> runs the same checks on a file in your browser.</p>
+</section>
+
+<section id="choose">
+<h2>How to test an email verification API before you choose one</h2>
+<p>Most email verification services look the same on their pricing pages. The difference shows up when you test them on hard addresses. Run these checks on any API you are comparing, including this one.</p>
+<ol>
+<li><strong>Known-bad addresses.</strong> Take 20 addresses that you know bounced last month. A good API should mark almost all of them invalid.</li>
+<li><strong>Catch-all domains.</strong> Pick a company domain that accepts mail for any address, and test one real address and one made-up address on it. Many APIs return "accept-all" or "risky" for both. Check whether the API can tell them apart.</li>
+<li><strong>Secure email gateways.</strong> Test addresses at companies that use Proofpoint, Mimecast or Barracuda in front of their mail servers. These often come back as "unknown".</li>
+<li><strong>Disposable and role addresses.</strong> Check that temporary inbox domains and addresses like info@ or sales@ are flagged separately from valid ones.</li>
+<li><strong>Unknown results and billing.</strong> Count how many results come back "unknown", and read whether those cost a credit.</li>
+<li><strong>Speed and timeouts.</strong> Time single calls during your busiest hour, and set a timeout in your code. Some mail servers answer slowly on purpose.</li>
+<li><strong>Bulk limits.</strong> Check the maximum batch size, the rate limit and how results are paged, so a large list does not need custom retry code.</li>
+<li><strong>Free credits.</strong> Check whether free credits expire and whether they cover every endpoint, or only single checks.</li>
+</ol>
+<p>Free credits make this test cheap. Use the same list on every API you try and compare the share of addresses each one confirms as valid or invalid.</p>
+</section>
+
+<section id="mcp">
+<h2>Email verification MCP server for Claude, ChatGPT and Cursor</h2>
+<p>The official MCP server lets an AI assistant run email verification for you. Ask "Is info@example.com deliverable?" and the assistant calls the API. The server URL is:</p>
+<pre><code>https://mcp.giggal.ai/mcp</code></pre>
+<p><strong>Claude and ChatGPT</strong> connect over OAuth, so no API key is needed. In Claude, open Settings, then Connectors, add a custom connector named Giggal.ai with the URL above, and click Connect. In ChatGPT, add a custom plugin with the same URL and choose OAuth.</p>
+<p><strong>Claude Code</strong> uses your API key:</p>
+<pre><code>claude mcp add --transport http --scope user giggal \
+  https://mcp.giggal.ai/mcp \
+  --header "Authorization: Bearer YOUR_API_KEY"</code></pre>
+<p><strong>Cursor, Windsurf and Cline</strong> read the server from an MCP config file, such as <code>~/.cursor/mcp.json</code>:</p>
+<pre><code>{
+  "mcpServers": {
+    "giggal": {
+      "url": "https://mcp.giggal.ai/mcp",
+      "headers": { "Authorization": "Bearer YOUR_API_KEY" }
+    }
+  }
+}</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th>Tool</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><code>verify_emails</code></td><td>Verify one address or a whole list, including catch-all and accept-all domains.</td></tr>
+<tr><td><code>get_verification_details</code></td><td>Fetch the full breakdown for a job: status per address, reason codes and scores.</td></tr>
+<tr><td><code>get_credit_balance</code></td><td>Check remaining credits before a large run.</td></tr>
+</tbody>
+</table>
+</div>
+<p>All three tools are read only. Config for VS Code, Zed and Codex is in the <a href="https://github.com/giggal-ai/giggal-mcp">giggal-mcp repository</a>, and setup guides with screenshots are on the <a href="https://giggal.ai/mcp">email verification MCP server</a> page.</p>
+</section>
+
+<section id="n8n">
+<h2>n8n email verification node</h2>
+<p>The <code>n8n-nodes-giggal</code> community node adds email verification to any self-hosted n8n workflow. In n8n, open Settings, then Community Nodes, choose Install a community node, and enter <code>n8n-nodes-giggal</code>. Community nodes work on self-hosted n8n only.</p>
+<ul>
+<li><strong>Email, Verify:</strong> checks one address per input item, 1 credit per call.</li>
+<li><strong>Email, Verify Batch:</strong> sends every input item as one bulk email verification job and returns the job ID.</li>
+<li><strong>Job, Get Status</strong> and <strong>Job, Get Results:</strong> follow the job and collect the results.</li>
+</ul>
+<p>The node's Batch mode runs all items in parallel and can hit the rate limit of 300 requests per 15 minutes, so use Sequential mode for large lists. The source is in the <a href="https://github.com/giggal-ai/n8n-nodes-giggal">n8n-nodes-giggal repository</a>, and a workflow walkthrough is on the <a href="https://giggal.ai/integrations/n8n">n8n email verification</a> page.</p>
+</section>
+
+<section id="no-code">
+<h2>No code? Use the email verifier in your browser</h2>
+<div class="grid">
+<div class="card"><h3>Email verifier</h3><p>Check one address in a few seconds. Free, no signup needed.</p><a href="https://giggal.ai/email-checker">Free email verifier</a></div>
+<div class="card"><h3>Bulk email verification</h3><p>Upload a CSV and clean the whole list before your next send.</p><a href="https://giggal.ai/bulk-email-verifier">Bulk email verification tool</a></div>
+<div class="card"><h3>Zapier and HubSpot</h3><p>Verify new leads automatically as they arrive.</p><a href="https://giggal.ai/integrations">Email verification integrations</a></div>
+<div class="card"><h3>RapidAPI</h3><p>Use the same API through the RapidAPI marketplace and its billing.</p><a href="https://rapidapi.com/SupportTeam-gqsyLfHHk/api/giggal-email-verification1">RapidAPI listing</a></div>
+</div>
+</section>
+
+<section id="guides">
+<h2>Developer guides</h2>
+<div class="grid">
+<div class="card"><h3><a href="/email-validation-javascript.html">Email validation in JavaScript</a></h3><p>Three regex patterns tested on 18 real cases, HTML5 input checks, an MX lookup in Node.js, and when a regex is not enough.</p></div>
+<div class="card"><h3><a href="/validate-email-address-python.html">Validate an email address in Python</a></h3><p>The email-validator library, MX lookups with dnspython, and the typo domain that passes both.</p></div>
+</div>
+</section>
+
+<section id="hard-addresses">
+<h2>Catch-all domains and secure email gateways</h2>
+<p>Two kinds of address cause most "unknown" results in email verification.</p>
+<p><strong>Catch-all domains</strong> accept mail for every address, whether the mailbox exists or not. A standard check asks the mail server about the mailbox, and the server always says yes. The API returns <code>catch_all: true</code> for these domains, plus a <code>catch_all_verdict</code> of valid or invalid from a deeper check.</p>
+<p><strong>Secure email gateways</strong>, such as Proofpoint, Mimecast and Barracuda, sit in front of many company mail servers. They often accept every recipient during the SMTP conversation and filter later, so a standard check cannot see the real mailbox. The <a href="https://giggal.ai/seg-email-verification">SEG email verification</a> page explains how Giggal.ai handles them.</p>
+</section>
+
+<section id="faq">
+<h2>Frequently asked questions</h2>
+<details><summary>Is there a free email verification API?</summary><p>Yes. A new Giggal.ai account gets 1,000 free credits with no card required, and the credits do not expire. One credit verifies one address through the API.</p></details>
+<details><summary>What is the difference between an email verification API and an email validation API?</summary><p>Most people use the two terms for the same thing. Validation often means checking the format, and verification means confirming that the mailbox exists. The Giggal.ai API does both in one call.</p></details>
+<details><summary>Can I run bulk email verification through the API?</summary><p>Yes. <code>POST /v1/verify-batch</code> accepts up to 50,000 addresses in one job. You poll the job status and then fetch the results page by page.</p></details>
+<details><summary>Do I need an API key to use the MCP server in Claude or ChatGPT?</summary><p>No. Claude and ChatGPT connect to https://mcp.giggal.ai/mcp over OAuth. Code editors and CLI clients use your API key as a Bearer token.</p></details>
+<details><summary>Can I call the API from browser JavaScript?</summary><p>Call it from your server. A key placed in browser code can be copied by anyone who opens the page.</p></details>
+<details><summary>What does a status of "unknown" mean?</summary><p>The mail server did not give a clear answer during the check, for example because of a timeout or a temporary error. You can check the address again later.</p></details>
+</section>
+</main>
+
+<footer>
+<div class="wrap">
+<p><a href="https://giggal.ai">Giggal.ai</a> is an email verification service. Website: <a href="https://giggal.ai">giggal.ai</a>. Source code: <a href="https://github.com/giggal-ai">github.com/giggal-ai</a>. Contact: info@giggal.ai.</p>
+</div>
+</footer>
+</body>
+</html>
